@@ -111,12 +111,16 @@ def tileCheck(x, y):
 		gameBoard[x][y].source = str(tileStates[x][y]) + '.jpg'
 		gameBoard[x][y].revealed = True
 
+def loseGame():
+	revealAll()
+
 def revealAll():
 	global gameBoard
 	global tileStates
 	for x in range(gameSize):
 		for y in range(gameSize):
-			gameBoard[x][y].reveal(tileStates[x][y])
+			if (gameBoard[x][y].revealed == False):
+				gameBoard[x][y].source = str(tileStates[x][y]) + '.jpg'
 
 #////////////////////////////////////////////// GAME TILE CLASS //
 class GameTile(ButtonBehavior, Image):
@@ -145,6 +149,9 @@ class GameTile(ButtonBehavior, Image):
     def reveal(self, tileStatus):
 		self.source = str(tileStatus) + '.jpg'
 		self.revealed = True
+		if (tileStatus == -1):
+			self.source = 'whoops.jpg'
+			loseGame()
 		if (tileStatus == 0):
 			checkNeighbors(self.tilePos)
 
