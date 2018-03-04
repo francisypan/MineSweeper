@@ -23,8 +23,8 @@ import random
 # ///////////////////////////////////////////////////// GLOBALS //
 # ////////////////////////////////////////////////////////////////
 
-gameSize = 30
-numBombs = 100
+gameSize = 10
+numBombs = 10
 # ////////////////////////////////////////////////////////////////
 # //////////////////////////////////// DECLARE APP, MAINSCREEN, //
 # ///////////////////// ACTOR CLASSES/METHODS AND SCREENMANAGER //
@@ -32,25 +32,34 @@ numBombs = 100
 
 sm = ScreenManager()
 
-class MyApp(App):
+class MinesweeperApp(App):
 	def build(self):
 		return sm
 
 Window.clearcolor = (0.8, 0.8, 0.8, 1)
-Window.system_size = (gameSize * 25, gameSize * 25)
+Window.system_size = (10 + gameSize * 25, 55 + gameSize * 25)
+Window.set_icon ('mine.jpg')
+Builder.load_file('MineSweeper.kv')
 
-class MainScreen(Screen):
-    pass
+class GameScene(Screen):
+	def resetGame(self):
+		self.ids.resetButton.source = '-1.jpg'
 
-#/////////////////////////////////////////////////////// METHODS //
+	def buttonUp(self):
+		self.ids.resetButton.source = 'reset.jpg'
 
+# ////////////////////////////////////////////////////////////////
+# ///////////////////////////////////////////////////// METHODS //
+# ////////////////////////////////////////////////////////////////
+
+# /////////////////////// ADDS DESIRED NUMBER OF BOMBS TO BOARD //
 def addBombs():
 	global numBombs
 	global tileStates
 	while numBombs > 0:
 		addBomb()
 		numBombs -= 1
-
+# ///////////////// RANDOMLY ADDS A BOMB TO AN UNOCCCUPIED TILE //
 def addBomb():
 	global tileStates
 	global gameBoard
@@ -62,7 +71,7 @@ def addBomb():
 		gameBoard[randX][randY].tileStatus = -1
 	else:
 		addBomb()
-
+# /////////////////////////// FILLS BOARD WITH REQUIRED NUMBERS //
 def fillBoard():
 	global tileStates
 	for x in range(gameSize):
@@ -76,12 +85,12 @@ def fillBoard():
 				trySetTile(x + 1, y - 1)
 				trySetTile(x + 1, y)
 				trySetTile(x + 1, y + 1)
-
+# ///////////////////////////// UPDATES THE STATUS OF ONE TILE //
 def trySetTile(x, y):
 	global tileStates
 	global gameBoard
 	if (x > gameSize - 1 or x < 0 or y > gameSize - 1 or y < 0 or tileStates[x][y] == -1):
-		return
+		return # // Takes care of index out of bounds or if the tile is a mine
 	else:
 		tileStates[x][y] += 1
 		gameBoard[x][y].tileStatus = tileStates[x][y]
@@ -112,15 +121,16 @@ def tileCheck(x, y):
 		gameBoard[x][y].revealed = True
 
 def loseGame():
-	revealAll()
+	revealAllMines()
 
-def revealAll():
+def revealAllMines():
 	global gameBoard
 	global tileStates
 	for x in range(gameSize):
 		for y in range(gameSize):
-			if (gameBoard[x][y].revealed == False):
-				gameBoard[x][y].source = str(tileStates[x][y]) + '.jpg'
+			if (gameBoard[x][y].revealed == False and gameBoard[x][y].tileStatus == -1):
+				gameBoard[x][y].source = '-1.jpg'
+			gameBoard[x][y].revealed = True
 
 #////////////////////////////////////////////// GAME TILE CLASS //
 class GameTile(ButtonBehavior, Image):
@@ -161,7 +171,7 @@ gameBoard = [[GameTile() for y in range(gameSize)] for x in range(gameSize)]
 tileStates = [[0 for y in range(gameSize)] for x in range(gameSize)]
 addBombs()
 fillBoard()
-#revealAll()
+
 # ////////////////////////////////////////////////////////////////
 # ////////////////////////////////////// CREATE GRID AND ACTORS //
 # ////////////////////////////////////////////////////////////////
@@ -170,7 +180,7 @@ grid = GridLayout(
     id = 'grid',
     cols = gameSize,
     rows = gameSize,
-    padding = 0,
+    padding = [5, 50, 5, 5],
     spacing = 0,
     col_default_width = 25,
     col_force_default = True,
@@ -183,12 +193,12 @@ for x in range (grid.cols):
 		gameBoard[x][y].tilePos = x, y
 		grid.add_widget(gameBoard[x][y])
 
-main = MainScreen(name = 'main')
-main.add_widget(grid)
-sm.add_widget(main)
+game = GameScene(name = 'game')
+game.add_widget(grid)
+sm.add_widget(game)
 
 # ////////////////////////////////////////////////////////////////
 # ///////////////////////////////////////////////////// RUN APP //
 # ////////////////////////////////////////////////////////////////
 
-MyApp().run()
+MinesweeperApp().run()

@@ -1,0 +1,18 @@
+<GameScene>:    #start scene with a button and label
+    name: 'game'
+    FloatLayout:
+        size_hint: None, None  #Needed to be able to define define height and width of widgets
+        Button:
+            size_hint: None,None
+            size: 40, 40
+            background_color: .8, .8, .8, 1
+            center_x: root.center_x
+            center_y: root.height - 25
+            on_press: root.resetGame()
+            on_release: root.buttonUp()
+            Image:
+                id: resetButton
+                source: 'reset.jpg'
+                center_x: self.parent.center_x
+                center_y: self.parent.center_y
+                size: self.parent.size
