@@ -23,8 +23,11 @@ import random
 # ///////////////////////////////////////////////////// GLOBALS //
 # ////////////////////////////////////////////////////////////////
 
-gameSize = 10
-numBombs = 10
+gameSize = 20
+numBombs = 2
+numFlagged = 0
+numCorrect = 0
+gameWon = False
 # ////////////////////////////////////////////////////////////////
 # //////////////////////////////////// DECLARE APP, MAINSCREEN, //
 # ///////////////////// ACTOR CLASSES/METHODS AND SCREENMANAGER //
@@ -42,11 +45,19 @@ Window.set_icon ('mine.jpg')
 Builder.load_file('MineSweeper.kv')
 
 class GameScene(Screen):
-	def resetGame(self):
+	def buttonDown(self):
 		self.ids.resetButton.source = '-1.jpg'
 
+	def resetGame(self):
+		resetBoard()
+
 	def buttonUp(self):
-		self.ids.resetButton.source = 'reset.jpg'
+		global gameWon
+		if (gameWon == False):
+			self.ids.resetButton.source = 'reset.jpg'
+
+		else:
+			self.ids.resetButton.source = 'flagged.jpg'
 
 # ////////////////////////////////////////////////////////////////
 # ///////////////////////////////////////////////////// METHODS //
@@ -56,9 +67,10 @@ class GameScene(Screen):
 def addBombs():
 	global numBombs
 	global tileStates
-	while numBombs > 0:
+	bombsLeft = numBombs
+	while bombsLeft > 0:
 		addBomb()
-		numBombs -= 1
+		bombsLeft -= 1
 # ///////////////// RANDOMLY ADDS A BOMB TO AN UNOCCCUPIED TILE //
 def addBomb():
 	global tileStates
@@ -66,8 +78,7 @@ def addBomb():
 	randX = random.randint(-1, gameSize - 1)
 	randY = random.randint(-1, gameSize - 1)
 	if (tileStates[randX][randY] == 0):
-        	global gameBoard
-        	tileStates[randX][randY] = -1
+		tileStates[randX][randY] = -1
 		gameBoard[randX][randY].tileStatus = -1
 	else:
 		addBomb()
@@ -123,18 +134,58 @@ def tileCheck(x, y):
 def loseGame():
 	revealAllMines()
 
+def checkWin():
+	global gameBoard
+	global numBombs
+	global numCorrect
+	for x in range (gameSize):
+	    for y in range (gameSize):
+			if (gameBoard[x][y].flagged == True and gameBoard[x][y].tileStatus == -1):
+				numCorrect += 1
+	if (numCorrect == numBombs):
+		win()
+
 def revealAllMines():
 	global gameBoard
 	global tileStates
 	for x in range(gameSize):
 		for y in range(gameSize):
-			if (gameBoard[x][y].revealed == False and gameBoard[x][y].tileStatus == -1):
+			if (gameBoard[x][y].flagged == True and gameBoard[x][y].tileStatus != -1):
+				gameBoard[x][y].source = 'wrongFlag.jpg'
+			elif (gameBoard[x][y].revealed == False and gameBoard[x][y].tileStatus == -1 and gameBoard[x][y].flagged == False):
 				gameBoard[x][y].source = '-1.jpg'
 			gameBoard[x][y].revealed = True
 
+def resetBoard():
+	global gameBoard
+	global tileStates
+	global numFlagged
+	global numCorrect
+	global gameWon
+	numFlagged = 0
+	numCorrect = 0
+	gameWon = False
+	for x in range (gameSize):
+	    for y in range (gameSize):
+			gameBoard[x][y].source = 'default.jpg'
+			gameBoard[x][y].revealed = False
+			gameBoard[x][y].flagged = False
+			gameBoard[x][y].tileStatus = 0
+			tileStates[x][y] = 0
+	createBoard()
+
+def createBoard():
+	addBombs()
+	fillBoard()
+
+def win():
+	global gameWon
+	gameWon = True
+	sm.current_screen.ids.resetButton.source = 'flagged.jpg'
+
 #////////////////////////////////////////////// GAME TILE CLASS //
 class GameTile(ButtonBehavior, Image):
-    def __init__(self, **kwargs):
+	def __init__(self, **kwargs):
 		super(GameTile, self).__init__(**kwargs)
 		self.revealed = False
 		self.flagged = False
@@ -145,18 +196,23 @@ class GameTile(ButtonBehavior, Image):
 		self.background_normal = ''
 		self.source = 'default.jpg'
 
-    def on_touch_down(self, touch):
-        if self.collide_point(touch.x, touch.y):
-            if (touch.button == 'right' and self.flagged == False and self.revealed == False):
-                self.source = 'flagged.jpg'
-                self.flagged = True
-            elif (touch.button == 'right' and self.flagged == True and self.revealed == False):
-                self.source = 'default.jpg'
-                self.flagged = False
-            elif (touch.button == 'left' and self.flagged == False and self.revealed == False):
-                self.reveal(self.tileStatus)
+	def on_touch_down(self, touch):
+		global numFlagged
+		if self.collide_point(touch.x, touch.y):
+			if (touch.button == 'right' and self.flagged == False and self.revealed == False):
+				self.source = 'flagged.jpg'
+				self.flagged = True
+				numFlagged += 1
+				if (numFlagged == numBombs):
+					checkWin()
+			elif (touch.button == 'right' and self.flagged == True and self.revealed == False):
+				self.source = 'default.jpg'
+				self.flagged = False
+				numFlagged -=1
+			elif (touch.button == 'left' and self.flagged == False and self.revealed == False):
+				self.reveal(self.tileStatus)
 
-    def reveal(self, tileStatus):
+	def reveal(self, tileStatus):
 		self.source = str(tileStatus) + '.jpg'
 		self.revealed = True
 		if (tileStatus == -1):
@@ -169,8 +225,7 @@ class GameTile(ButtonBehavior, Image):
 
 gameBoard = [[GameTile() for y in range(gameSize)] for x in range(gameSize)]
 tileStates = [[0 for y in range(gameSize)] for x in range(gameSize)]
-addBombs()
-fillBoard()
+createBoard()
 
 # ////////////////////////////////////////////////////////////////
 # ////////////////////////////////////// CREATE GRID AND ACTORS //
@@ -187,8 +242,8 @@ grid = GridLayout(
     row_default_height = 25,
     row_force_default = True)
 
-for x in range (grid.cols):
-    for y in range (grid.rows):
+for x in range (gameSize):
+    for y in range (gameSize):
 		global gameBoard
 		gameBoard[x][y].tilePos = x, y
 		grid.add_widget(gameBoard[x][y])

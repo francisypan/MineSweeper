@@ -8,8 +8,9 @@
             background_color: .8, .8, .8, 1
             center_x: root.center_x
             center_y: root.height - 25
-            on_press: root.resetGame()
-            on_release: root.buttonUp()
+            on_press: root.buttonDown()
+            on_release: root.resetGame()
+            on_touch_up: root.buttonUp()
             Image:
                 id: resetButton
                 source: 'reset.jpg'
