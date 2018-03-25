@@ -23,8 +23,8 @@ import random
 # ///////////////////////////////////////////////////// GLOBALS //
 # ////////////////////////////////////////////////////////////////
 
-gameSize = 20
-numBombs = 2
+gameSize = 10
+numBombs = 10
 numFlagged = 0
 numCorrect = 0
 gameWon = False
@@ -144,6 +144,8 @@ def checkWin():
 				numCorrect += 1
 	if (numCorrect == numBombs):
 		win()
+	else:
+		numCorrect = 0
 
 def revealAllMines():
 	global gameBoard
